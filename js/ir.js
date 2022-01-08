@@ -4,8 +4,10 @@
  * @param {Y or N} p_attrib1 
  * @param {Y or N} p_attrib2 
  * @param {HEX Color Code} p_attrib3 
+ * @param {Y or N} p_attrib4 
+ * @param {HEX Color Code} p_attrib5 
  */
-function caller(p_affectedRegionId, p_attrib1, p_attrib2, p_attrib3) {
+ function caller(p_affectedRegionId, p_attrib1, p_attrib2, p_attrib3, p_attrib4, p_attrib5) {
     console.info('Interactive Report Util loaded for region: ' + p_affectedRegionId);
     if (p_attrib1 === 'Y') {
         HighlightSearch(p_affectedRegionId, p_attrib3);
@@ -13,6 +15,14 @@ function caller(p_affectedRegionId, p_attrib1, p_attrib2, p_attrib3) {
     if (p_attrib2 === 'Y') {
         Pagination(p_affectedRegionId);
     }
+    if (p_attrib4 === 'Y') {
+        console.log('HighlightRow');
+        apex.jQuery(apex.gPageContext$).on('apexreadyend', function (e) {
+            console.info('ApexReadyEnd');
+            HighlightRow(p_affectedRegionId, p_attrib5);
+        });
+        
+    }    
 }
 
 /**
@@ -27,7 +37,6 @@ function HighlightSearch(p_InteractiveReport, p_Color) {
             v_search = $('#' + p_InteractiveReport + '_search_field').val();
             v_search = v_search.toLowerCase();
             window[p_InteractiveReport + '_search'] = v_search;
-            //console.log('HighlightSearch => ' + v_search);
             HighlightCell(p_InteractiveReport, window[p_InteractiveReport + '_search'], 'highlight-data');
         }
     });
@@ -54,8 +63,6 @@ function insertCSS(p_CSS) {
     var style = document.createElement('style');
     document.head.appendChild(style);
     style.sheet.insertRule(p_CSS);
-    console.log('insertCSS => ' + p_CSS);
-
 }
 /**
  * @function HighlightCell
@@ -84,18 +91,34 @@ function HighlightCell(p_Table, p_Search, p_Class) {
 }
 
 /**
+ * @function HighlightRow
+ * @description Highlight a table row on click
+ * @param {@function} p_InteractiveReport 
+ * @param {*} p_HighlightColor 
+ */
+function HighlightRow(p_InteractiveReport, p_HighlightColor) {
+    // Insert CSS rule
+    insertCSS('#' + p_InteractiveReport + ' .highlight-row {background-color: ' + p_HighlightColor + '!important;}');
+    $('body').on('click','#' + p_InteractiveReport + ' tr', (function(e){
+        $('.highlight-row').removeClass('highlight-row');
+        $(e.currentTarget).children('td').addClass('highlight-row');
+        // $(e.currentTarget).find('a')[0].click();
+    }))
+}
+
+/**
  * @function Pagination
  * @description Init createPagination event handlers
  * @param p_InteractiveReport Interactive Report Static ID
  */
 function Pagination(p_InteractiveReport) {
-    apex.jQuery(apex.gPageContext$).on("apexreadyend", function (e) {
+    apex.jQuery(apex.gPageContext$).on('apexreadyend', function (e) {
         console.info('ApexReadyEnd');
         createPagination(p_InteractiveReport);
     });
 
-    apex.jQuery("#" + p_InteractiveReport).on("apexafterrefresh", function () {
-        console.info('apexafterrefresh');
+    apex.jQuery('#' + p_InteractiveReport).on('apexafterrefresh', function () {
+        console.info('ApexAfterRefresh');
         createPagination(p_InteractiveReport);
     });
 }
@@ -114,18 +137,14 @@ function createPagination(p_InteractiveReport) {
     let temp_Button_prev = '<button class="t-Button t-Button--noLabel t-Button--icon t-Button--padLeft" onclick="void(0);" type="button" id="' + p_InteractiveReport + '_btn_prev" title="Previous Page" aria-label="Previous Page"><span class="t-Icon fa fa-chevron-left" aria-hidden="true"></span></button>';
     let temp_Button_next = '<button class="t-Button t-Button--noLabel t-Button--icon" onclick="void(0);" type="button" id="' + p_InteractiveReport + '_btn_next" title="Next Page" aria-label="Next Page"><span class="t-Icon fa fa-chevron-right" aria-hidden="true"></span></button>';
     /* Pagination Buttons */
-//    let IR_Pagination_Next = '[aria-controls="' + p_InteractiveReport + '"][title="Next"],[aria-controls="' + p_InteractiveReport + '"][title="Weiter"]';
-//    let IR_Pagination_Prev = '[aria-controls="' + p_InteractiveReport + '"][title="Previous"],[aria-controls="' + p_InteractiveReport + '"][title="Zurück"]';
     let IR_Pagination_Next = '#' + p_InteractiveReport + ' li.a-IRR-pagination-item:nth-child(3) button';
     let IR_Pagination_Prev = '#' + p_InteractiveReport + ' li.a-IRR-pagination-item:nth-child(1) button';
-    console.log(IR_Pagination_Next);
 
     // Append Previous Button to dom
     $('#' + p_InteractiveReport + ' ' + temp_target).append(temp_Button_prev)
 
     // Add Click Handler
     $('#' + p_InteractiveReport + '_btn_prev').bind('click', function () {
-        console.info('Button Previous');
         $(IR_Pagination_Prev).click();
     });
 
@@ -139,7 +158,6 @@ function createPagination(p_InteractiveReport) {
 
     // Add Click Handler
     $('#' + p_InteractiveReport + '_btn_next').bind('click', function () {
-        console.info('Button Next');
         $(IR_Pagination_Next).click();
     });
 
